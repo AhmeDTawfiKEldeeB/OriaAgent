@@ -10,6 +10,11 @@ class LLMProviderType(str, Enum):
     GROQ = "groq"
 
 
+class MemoryProviderType(str, Enum):
+    QDRANT = "qdrant"
+    MONGODB = "mongodb"
+
+
 class GeminiSettings(BaseModel):
     """Configuration settings for Google Gemini provider."""
     api_key: str = Field(default="", description="Google Gemini API Key")
@@ -24,6 +29,24 @@ class GroqSettings(BaseModel):
     model: str = Field(default="llama-3.3-70b-versatile", description="Groq Model Name")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: Optional[int] = Field(default=None, description="Max completion tokens")
+
+
+class QdrantSettings(BaseModel):
+    """Configuration settings for Qdrant Vector Database."""
+    url: str = Field(default="http://localhost:6333", description="Qdrant service URL")
+    api_key: Optional[str] = Field(default=None, description="Qdrant API Key (for cloud/auth)")
+    collection_name: str = Field(default="long_term_memory", description="Collection name for long-term memory")
+    embedding_model: str = Field(default="all-MiniLM-L6-v2", description="Sentence Transformers embedding model name")
+    similarity_threshold: float = Field(default=0.9, ge=0.0, le=1.0, description="Threshold for considering memories similar")
+
+
+class MongoDBSettings(BaseModel):
+    """Configuration settings for MongoDB Vector Database."""
+    uri: str = Field(default="mongodb://localhost:27017", description="MongoDB connection URI")
+    database: str = Field(default="oria_agent", description="MongoDB database name")
+    collection_name: str = Field(default="long_term_memory", description="MongoDB collection name")
+    embedding_model: str = Field(default="all-MiniLM-L6-v2", description="Sentence Transformers embedding model name")
+    similarity_threshold: float = Field(default=0.9, ge=0.0, le=1.0, description="Threshold for considering memories similar")
 
 
 class Settings(BaseSettings):
@@ -42,6 +65,13 @@ class Settings(BaseSettings):
         description="The active LLM provider (gemini, groq)",
     )
 
+    # Active Memory / Vector DB provider
+    memory_provider: MemoryProviderType = Field(
+        default=MemoryProviderType.QDRANT,
+        validation_alias="MEMORY_PROVIDER",
+        description="The active memory provider (qdrant, mongodb)",
+    )
+
     # Environment
     app_env: str = Field(default="development", validation_alias="APP_ENV")
 
@@ -56,6 +86,20 @@ class Settings(BaseSettings):
     groq_model: str = Field(default="llama-3.3-70b-versatile", validation_alias="GROQ_MODEL")
     groq_temperature: float = Field(default=0.7, validation_alias="GROQ_TEMPERATURE")
     groq_max_tokens: Optional[int] = Field(default=None, validation_alias="GROQ_MAX_TOKENS")
+
+    # Qdrant Config
+    qdrant_url: str = Field(default="http://localhost:6333", validation_alias="QDRANT_URL")
+    qdrant_api_key: Optional[str] = Field(default=None, validation_alias="QDRANT_API_KEY")
+    qdrant_collection_name: str = Field(default="long_term_memory", validation_alias="QDRANT_COLLECTION_NAME")
+    qdrant_embedding_model: str = Field(default="all-MiniLM-L6-v2", validation_alias="EMBEDDING_MODEL")
+    qdrant_similarity_threshold: float = Field(default=0.9, validation_alias="SIMILARITY_THRESHOLD")
+
+    # MongoDB Config
+    mongodb_uri: str = Field(default="mongodb://localhost:27017", validation_alias="MONGODB_URI")
+    mongodb_database: str = Field(default="oria_agent", validation_alias="MONGODB_DATABASE")
+    mongodb_collection_name: str = Field(default="long_term_memory", validation_alias="MONGODB_COLLECTION_NAME")
+    mongodb_embedding_model: str = Field(default="all-MiniLM-L6-v2", validation_alias="MONGODB_EMBEDDING_MODEL")
+    mongodb_similarity_threshold: float = Field(default=0.9, validation_alias="MONGODB_SIMILARITY_THRESHOLD")
 
     @property
     def gemini(self) -> GeminiSettings:
@@ -73,6 +117,26 @@ class Settings(BaseSettings):
             model=self.groq_model,
             temperature=self.groq_temperature,
             max_tokens=self.groq_max_tokens,
+        )
+
+    @property
+    def qdrant(self) -> QdrantSettings:
+        return QdrantSettings(
+            url=self.qdrant_url,
+            api_key=self.qdrant_api_key,
+            collection_name=self.qdrant_collection_name,
+            embedding_model=self.qdrant_embedding_model,
+            similarity_threshold=self.qdrant_similarity_threshold,
+        )
+
+    @property
+    def mongodb(self) -> MongoDBSettings:
+        return MongoDBSettings(
+            uri=self.mongodb_uri,
+            database=self.mongodb_database,
+            collection_name=self.mongodb_collection_name,
+            embedding_model=self.mongodb_embedding_model,
+            similarity_threshold=self.mongodb_similarity_threshold,
         )
 
 
