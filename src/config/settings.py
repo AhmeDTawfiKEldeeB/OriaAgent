@@ -101,6 +101,30 @@ class Settings(BaseSettings):
     mongodb_embedding_model: str = Field(default="all-MiniLM-L6-v2", validation_alias="MONGODB_EMBEDDING_MODEL")
     mongodb_similarity_threshold: float = Field(default=0.9, validation_alias="MONGODB_SIMILARITY_THRESHOLD")
 
+    # Memory Configuration
+    memory_top_k: int = Field(
+        default=5,
+        validation_alias="MEMORY_TOP_K",
+        description="Number of top relevant memories to retrieve",
+    )
+    small_text_model_name: str = Field(
+        default="llama-3.3-70b-versatile",
+        validation_alias="SMALL_TEXT_MODEL_NAME",
+        description="Fast/small model for memory analysis",
+    )
+
+    @property
+    def GROQ_API_KEY(self) -> str:
+        return self.groq_api_key
+
+    @property
+    def SMALL_TEXT_MODEL_NAME(self) -> str:
+        return self.small_text_model_name
+
+    @property
+    def MEMORY_TOP_K(self) -> int:
+        return self.memory_top_k
+
     @property
     def gemini(self) -> GeminiSettings:
         return GeminiSettings(
@@ -144,3 +168,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Return a cached singleton instance of Settings."""
     return Settings()
+
+
+# Singleton instance for convenience
+settings = get_settings()
