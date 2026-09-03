@@ -114,7 +114,7 @@ class Settings(BaseSettings):
         description="Number of top relevant memories to retrieve",
     )
     small_text_model_name: str = Field(
-        default="llama-3.3-70b-versatile",
+        default="openai/gpt-oss-20b",
         validation_alias="SMALL_TEXT_MODEL_NAME",
         description="Fast/small model for memory analysis",
     )
