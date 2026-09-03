@@ -49,6 +49,12 @@ class MongoDBSettings(BaseModel):
     similarity_threshold: float = Field(default=0.9, ge=0.0, le=1.0, description="Threshold for considering memories similar")
 
 
+class ElevenLabsSettings(BaseModel):
+    """Configuration settings for ElevenLabs Text-to-Speech."""
+    api_key: str = Field(default="", description="ElevenLabs API Key")
+    voice_id: str = Field(default="", description="Default ElevenLabs Voice ID")
+
+
 class Settings(BaseSettings):
     """Application settings loaded from environment variables and .env file."""
     model_config = SettingsConfigDict(
@@ -113,6 +119,10 @@ class Settings(BaseSettings):
         description="Fast/small model for memory analysis",
     )
 
+    # ElevenLabs / Text-To-Speech Configuration
+    elevenlabs_api_key: str = Field(default="", validation_alias="ELEVENLABS_API_KEY")
+    elevenlabs_voice_id: str = Field(default="", validation_alias="ELEVENLABS_VOICE_ID")
+
     @property
     def GROQ_API_KEY(self) -> str:
         return self.groq_api_key
@@ -124,6 +134,21 @@ class Settings(BaseSettings):
     @property
     def MEMORY_TOP_K(self) -> int:
         return self.memory_top_k
+
+    @property
+    def ELEVENLABS_API_KEY(self) -> str:
+        return self.elevenlabs_api_key
+
+    @property
+    def ELEVENLABS_VOICE_ID(self) -> str:
+        return self.elevenlabs_voice_id
+
+    @property
+    def elevenlabs(self) -> ElevenLabsSettings:
+        return ElevenLabsSettings(
+            api_key=self.elevenlabs_api_key,
+            voice_id=self.elevenlabs_voice_id,
+        )
 
     @property
     def gemini(self) -> GeminiSettings:
