@@ -123,9 +123,49 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = Field(default="", validation_alias="ELEVENLABS_API_KEY")
     elevenlabs_voice_id: str = Field(default="", validation_alias="ELEVENLABS_VOICE_ID")
 
+    # Image-To-Text / Vision Configuration
+    itt_model_name: str = Field(
+        default="llama-3.2-11b-vision-preview",
+        validation_alias="ITT_MODEL_NAME",
+        description="Model name for image-to-text conversion (Groq Vision)",
+    )
+
+    # Together AI & Text-To-Image Configuration
+    together_api_key: str = Field(
+        default="",
+        validation_alias="TOGETHER_API_KEY",
+        description="Together AI API Key",
+    )
+    tti_model_name: str = Field(
+        default="black-forest-labs/FLUX.1-schnell",
+        validation_alias="TTI_MODEL_NAME",
+        description="Text-to-image model name (Together AI)",
+    )
+    text_model_name: str = Field(
+        default="llama-3.3-70b-versatile",
+        validation_alias="TEXT_MODEL_NAME",
+        description="Text model name for prompt enhancement and scenario creation",
+    )
+
     @property
     def GROQ_API_KEY(self) -> str:
         return self.groq_api_key
+
+    @property
+    def TOGETHER_API_KEY(self) -> str:
+        return self.together_api_key
+
+    @property
+    def ITT_MODEL_NAME(self) -> str:
+        return self.itt_model_name
+
+    @property
+    def TTI_MODEL_NAME(self) -> str:
+        return self.tti_model_name
+
+    @property
+    def TEXT_MODEL_NAME(self) -> str:
+        return self.text_model_name or self.groq_model
 
     @property
     def SMALL_TEXT_MODEL_NAME(self) -> str:
