@@ -14,3 +14,14 @@ class TextToSpeechError(OriaAgentException):
 class SpeechToTextError(OriaAgentException):
     """Raised when speech-to-text transcription fails."""
     pass
+
+
+class ImageToTextError(OriaAgentException):
+    """Raised when image-to-text conversion fails."""
+    pass
+
+
+class TextToImageError(OriaAgentException):
+    """Raised when text-to-image generation fails."""
+    pass
+
