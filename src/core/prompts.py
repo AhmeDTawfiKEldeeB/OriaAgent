@@ -90,7 +90,6 @@ Enhance the given prompt using the best prompt engineering techniques such as pr
 # Example
 "realistic photo of a person having a coffee" -> "photo of a person having a coffee in a cozy cafe, natural morning light, shot with a 50mm f/1.8 lens, 8425.HEIC"
 """
-
 __all__ = [
     "MEMORY_ANALYSIS_PROMPT",
     "IMAGE_SCENARIO_PROMPT",
