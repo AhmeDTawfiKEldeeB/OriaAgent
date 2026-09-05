@@ -15,6 +15,21 @@ class MemoryProviderType(str, Enum):
     MONGODB = "mongodb"
 
 
+class TTIProviderType(str, Enum):
+    CLOUDFLARE = "cloudflare"
+
+
+class CloudflareSettings(BaseModel):
+    """Configuration settings for Cloudflare Workers AI provider."""
+    account_id: str = Field(default="", description="Cloudflare Account ID")
+    api_token: str = Field(default="", description="Cloudflare API Token")
+    model: str = Field(
+        default="@cf/black-forest-labs/flux-1-schnell",
+        description="Cloudflare text-to-image model name",
+    )
+
+
+
 class GeminiSettings(BaseModel):
     """Configuration settings for Google Gemini provider."""
     api_key: str = Field(default="", description="Google Gemini API Key")
@@ -78,6 +93,13 @@ class Settings(BaseSettings):
         description="The active memory provider (qdrant, mongodb)",
     )
 
+    # Active Text-To-Image Provider
+    tti_provider: TTIProviderType = Field(
+        default=TTIProviderType.CLOUDFLARE,
+        validation_alias="TTI_PROVIDER",
+        description="The active text-to-image provider (cloudflare)",
+    )
+
     # Environment
     app_env: str = Field(default="development", validation_alias="APP_ENV")
 
@@ -130,16 +152,21 @@ class Settings(BaseSettings):
         description="Model name for image-to-text conversion (Groq Vision)",
     )
 
-    # Together AI & Text-To-Image Configuration
-    together_api_key: str = Field(
+    # Cloudflare & Text-To-Image Configuration
+    cloudflare_account_id: str = Field(
         default="",
-        validation_alias="TOGETHER_API_KEY",
-        description="Together AI API Key",
+        validation_alias="CLOUDFLARE_ACCOUNT_ID",
+        description="Cloudflare Account ID",
+    )
+    cloudflare_api_token: str = Field(
+        default="",
+        validation_alias="CLOUDFLARE_API_TOKEN",
+        description="Cloudflare API Token",
     )
     tti_model_name: str = Field(
-        default="black-forest-labs/FLUX.1-schnell",
+        default="@cf/black-forest-labs/flux-1-schnell",
         validation_alias="TTI_MODEL_NAME",
-        description="Text-to-image model name (Together AI)",
+        description="Text-to-image model name",
     )
     text_model_name: str = Field(
         default="llama-3.3-70b-versatile",
@@ -152,8 +179,28 @@ class Settings(BaseSettings):
         return self.groq_api_key
 
     @property
-    def TOGETHER_API_KEY(self) -> str:
-        return self.together_api_key
+    def TTI_PROVIDER(self) -> str:
+        return (
+            self.tti_provider.value
+            if isinstance(self.tti_provider, TTIProviderType)
+            else str(self.tti_provider)
+        )
+
+    @property
+    def CLOUDFLARE_ACCOUNT_ID(self) -> str:
+        return self.cloudflare_account_id
+
+    @property
+    def CLOUDFLARE_API_TOKEN(self) -> str:
+        return self.cloudflare_api_token
+
+    @property
+    def cloudflare(self) -> CloudflareSettings:
+        return CloudflareSettings(
+            account_id=self.cloudflare_account_id,
+            api_token=self.cloudflare_api_token,
+            model=self.tti_model_name,
+        )
 
     @property
     def ITT_MODEL_NAME(self) -> str:
