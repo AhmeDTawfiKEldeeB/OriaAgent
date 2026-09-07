@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "oria_agent": "./src/graph/graph.py:graph"
+  },
+  "env": ".env"
+}
