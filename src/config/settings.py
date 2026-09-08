@@ -140,6 +140,21 @@ class Settings(BaseSettings):
         validation_alias="SMALL_TEXT_MODEL_NAME",
         description="Fast/small model for memory analysis",
     )
+    router_messages_to_analyze: int = Field(
+        default=5,
+        validation_alias="ROUTER_MESSAGES_TO_ANALYZE",
+        description="Number of recent messages to analyze for routing",
+    )
+    total_messages_after_summary: int = Field(
+        default=5,
+        validation_alias="TOTAL_MESSAGES_AFTER_SUMMARY",
+        description="Number of messages to retain after summarization",
+    )
+    total_messages_summary_trigger: int = Field(
+        default=10,
+        validation_alias="TOTAL_MESSAGES_SUMMARY_TRIGGER",
+        description="Threshold of total messages that triggers conversation summarization",
+    )
 
     # ElevenLabs / Text-To-Speech Configuration
     elevenlabs_api_key: str = Field(default="", validation_alias="ELEVENLABS_API_KEY")
@@ -221,6 +236,18 @@ class Settings(BaseSettings):
     @property
     def MEMORY_TOP_K(self) -> int:
         return self.memory_top_k
+
+    @property
+    def ROUTER_MESSAGES_TO_ANALYZE(self) -> int:
+        return self.router_messages_to_analyze
+
+    @property
+    def TOTAL_MESSAGES_AFTER_SUMMARY(self) -> int:
+        return self.total_messages_after_summary
+
+    @property
+    def TOTAL_MESSAGES_SUMMARY_TRIGGER(self) -> int:
+        return self.total_messages_summary_trigger
 
     @property
     def ELEVENLABS_API_KEY(self) -> str:
