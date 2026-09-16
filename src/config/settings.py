@@ -41,7 +41,7 @@ class GeminiSettings(BaseModel):
 class GroqSettings(BaseModel):
     """Configuration settings for Groq provider."""
     api_key: str = Field(default="", description="Groq API Key")
-    model: str = Field(default="llama-3.3-70b-versatile", description="Groq Model Name")
+    model: str = Field(default="qwen/qwen3.8-27b", description="Groq Model Name")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: Optional[int] = Field(default=None, description="Max completion tokens")
 
