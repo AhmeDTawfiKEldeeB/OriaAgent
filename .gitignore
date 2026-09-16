@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# LangGraph Dev API & Checkpoints
+.langgraph_api/
+*.pckl
+
+# Generated Agent Media
+generated_audio/
+generated_images/
