@@ -1,8 +1,10 @@
+import asyncio
 import base64
 import logging
 import os
 from typing import Any, Optional
 
+import inspect
 import requests
 from dotenv import load_dotenv
 
@@ -115,7 +117,9 @@ class CloudflareTTIProvider(TTIProvider):
             payload = {"prompt": prompt}
 
             client = self._client or requests
-            response = client.post(url, headers=headers, json=payload, timeout=60)
+            response = await asyncio.to_thread(
+                client.post, url, headers=headers, json=payload, timeout=60
+            )
 
             if response.status_code != 200:
                 error_msg = f"Cloudflare API returned status {response.status_code}: {response.text}"
@@ -147,9 +151,12 @@ class CloudflareTTIProvider(TTIProvider):
                 raise TextToImageError("Failed to generate image: Empty response from Cloudflare API")
 
             if output_path:
-                os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                with open(output_path, "wb") as f:
-                    f.write(image_data)
+                def _save_file():
+                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                    with open(output_path, "wb") as f:
+                        f.write(image_data)
+
+                await asyncio.to_thread(_save_file)
                 self.logger.info(f"Image saved to {output_path}")
 
             return image_data
@@ -171,8 +178,14 @@ class CloudflareTTIProvider(TTIProvider):
 
             self.logger.info("Creating scenario from chat history")
 
+            model_to_use = (
+                settings.groq_model
+                if settings.TEXT_MODEL_NAME == "llama-3.3-70b-versatile"
+                else settings.TEXT_MODEL_NAME
+            )
+
             llm = ChatGroq(
-                model=settings.TEXT_MODEL_NAME,
+                model=model_to_use,
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.4,
                 max_retries=2,
@@ -188,9 +201,28 @@ class CloudflareTTIProvider(TTIProvider):
                 | structured_llm
             )
 
-            scenario = chain.invoke({"chat_history": formatted_history})
-            self.logger.info(f"Created scenario: {scenario}")
+            try:
+                call_res = getattr(chain, "ainvoke", chain.invoke)({"chat_history": formatted_history})
+                if inspect.isawaitable(call_res):
+                    scenario = await call_res
+                else:
+                    scenario = chain.invoke({"chat_history": formatted_history})
+            except Exception as chain_err:
+                err_str = str(chain_err)
+                if "failed_generation" in err_str:
+                    import json
+                    import re
 
+                    match = re.search(r"\{[^{}]*\}", err_str, re.DOTALL)
+                    if match:
+                        data = json.loads(match.group(0))
+                        scenario = ScenarioPrompt(**data)
+                    else:
+                        raise
+                else:
+                    raise
+
+            self.logger.info(f"Created scenario: {scenario}")
             return scenario
 
         except Exception as e:
@@ -201,8 +233,14 @@ class CloudflareTTIProvider(TTIProvider):
         try:
             self.logger.info(f"Enhancing prompt: '{prompt}'")
 
+            model_to_use = (
+                settings.groq_model
+                if settings.TEXT_MODEL_NAME == "llama-3.3-70b-versatile"
+                else settings.TEXT_MODEL_NAME
+            )
+
             llm = ChatGroq(
-                model=settings.TEXT_MODEL_NAME,
+                model=model_to_use,
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.25,
                 max_retries=2,
@@ -218,9 +256,29 @@ class CloudflareTTIProvider(TTIProvider):
                 | structured_llm
             )
 
-            enhanced_prompt = chain.invoke({"prompt": prompt}).content
-            self.logger.info(f"Enhanced prompt: '{enhanced_prompt}'")
+            try:
+                call_res = getattr(chain, "ainvoke", chain.invoke)({"prompt": prompt})
+                if inspect.isawaitable(call_res):
+                    res = await call_res
+                else:
+                    res = chain.invoke({"prompt": prompt})
+                enhanced_prompt = getattr(res, "content", getattr(res, "prompt", str(res)))
+            except Exception as chain_err:
+                err_str = str(chain_err)
+                if "failed_generation" in err_str:
+                    import json
+                    import re
 
+                    match = re.search(r"\{[^{}]*\}", err_str, re.DOTALL)
+                    if match:
+                        data = json.loads(match.group(0))
+                        enhanced_prompt = data.get("prompt", prompt)
+                    else:
+                        enhanced_prompt = prompt
+                else:
+                    enhanced_prompt = prompt
+
+            self.logger.info(f"Enhanced prompt: '{enhanced_prompt}'")
             return enhanced_prompt
 
         except Exception as e:
