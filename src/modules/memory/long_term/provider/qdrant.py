@@ -66,7 +66,7 @@ class QdrantVectorStore(BaseVectorStore):
             path = url.replace("path:", "").strip()
             self.client = QdrantClient(path=path)
         else:
-            client_kwargs: Dict[str, Any] = {"url": url}
+            client_kwargs: Dict[str, Any] = {"url": url, "timeout": 30.0}
             if self._settings.api_key:
                 client_kwargs["api_key"] = self._settings.api_key
             self.client = QdrantClient(**client_kwargs)
