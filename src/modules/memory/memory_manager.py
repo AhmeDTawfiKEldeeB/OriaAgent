@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -95,7 +96,47 @@ class MemoryManager:
     async def _analyze_memory(self, message: str) -> MemoryAnalysis:
         """Analyze a message to determine importance and format if needed."""
         prompt = MEMORY_ANALYSIS_PROMPT.format(message=message)
-        return await self.llm.ainvoke(prompt)
+        try:
+            return await self.llm.ainvoke(prompt)
+        except Exception as e:
+            err_str = str(e)
+            # 1. Groq tool_use_failed: extract the model's generated JSON directly from failed_generation
+            if "failed_generation" in err_str:
+                import json
+                import re
+
+                match = re.search(r"\{[^{}]*\}", err_str, re.DOTALL)
+                if match:
+                    try:
+                        data = json.loads(match.group(0))
+                        return MemoryAnalysis(**data)
+                    except Exception:
+                        pass
+
+            # 2. Fallback: prompt raw LLM directly for JSON output without tools
+            try:
+                raw_llm = ChatGroq(
+                    model=getattr(self.settings, "groq_model", "qwen/qwen3.8-27b"),
+                    api_key=self.settings.groq_api_key or getattr(self.settings, "GROQ_API_KEY", ""),
+                    temperature=0.1,
+                )
+                raw_prompt = (
+                    prompt
+                    + '\nImportant: Output ONLY a valid JSON object matching this schema:\n'
+                    '{"is_important": true, "formatted_memory": "..."}'
+                )
+                res = await raw_llm.ainvoke(raw_prompt)
+                import json
+                import re
+
+                match = re.search(r"\{[^{}]*\}", res.content, re.DOTALL)
+                if match:
+                    data = json.loads(match.group(0))
+                    return MemoryAnalysis(**data)
+            except Exception as inner_e:
+                self.logger.warning(f"Memory analysis fallback failed: {inner_e}")
+
+            return MemoryAnalysis(is_important=False, formatted_memory=None)
 
     async def extract_and_store_memories(self, message: Union[BaseMessage, Any]) -> Optional[str]:
         """Extract important information from a message and store in vector store."""
@@ -117,16 +158,17 @@ class MemoryManager:
         # Analyze the message for importance and formatting
         analysis = await self._analyze_memory(content)
         if analysis.is_important and analysis.formatted_memory:
-            # Check if similar memory exists
-            similar = self.vector_store.find_similar_memory(analysis.formatted_memory)
+            # Check if similar memory exists (run non-blocking in thread)
+            similar = await asyncio.to_thread(self.vector_store.find_similar_memory, analysis.formatted_memory)
             if similar:
                 # Skip storage if we already have a similar memory
                 self.logger.info(f"Similar memory already exists: '{analysis.formatted_memory}'")
                 return None
 
-            # Store new memory
+            # Store new memory (run non-blocking in thread)
             self.logger.info(f"Storing new memory: '{analysis.formatted_memory}'")
-            memory_id = self.vector_store.store_memory(
+            memory_id = await asyncio.to_thread(
+                self.vector_store.store_memory,
                 text=analysis.formatted_memory,
                 metadata={
                     "id": str(uuid.uuid4()),
