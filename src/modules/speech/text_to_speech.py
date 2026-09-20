@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Optional
 
@@ -82,20 +83,20 @@ class TextToSpeech:
                 or getattr(settings, "ELEVENLABS_VOICE_ID", "")
             )
 
-            audio_generator = self.client.text_to_speech.convert(
-                voice_id=voice_id,
-                text=text,
-                voice_settings=VoiceSettings(
-                    stability=0.5,
-                    similarity_boost=0.5,
-                ),
-            )
+            def _sync_tts():
+                generator = self.client.text_to_speech.convert(
+                    voice_id=voice_id,
+                    text=text,
+                    voice_settings=VoiceSettings(
+                        stability=0.5,
+                        similarity_boost=0.5,
+                    ),
+                )
+                if isinstance(generator, (bytes, bytearray)):
+                    return bytes(generator)
+                return b"".join(generator)
 
-            # Convert generator to bytes
-            if isinstance(audio_generator, (bytes, bytearray)):
-                audio_bytes = bytes(audio_generator)
-            else:
-                audio_bytes = b"".join(audio_generator)
+            audio_bytes = await asyncio.to_thread(_sync_tts)
 
             if not audio_bytes:
                 raise TextToSpeechError("Generated audio is empty")
