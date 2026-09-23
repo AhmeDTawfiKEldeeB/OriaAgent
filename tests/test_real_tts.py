@@ -6,11 +6,14 @@ import sys
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import pytest
+
 from src.config.settings import get_settings
 from src.core.exceptions import TextToSpeechError
 from src.modules.speech.text_to_speech import TextToSpeech
 
 
+@pytest.mark.asyncio
 async def test_real_tts(
     text: str = "Hello Ahmed, i am oria what about you today good or not.",
     custom_voice_id: str | None = None,
