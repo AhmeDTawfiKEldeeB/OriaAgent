@@ -6,11 +6,14 @@ import sys
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import pytest
+
 from src.config.settings import get_settings
 from src.core.exceptions import TextToImageError
 from src.modules.image.text_to_image import get_text_to_image
 
 
+@pytest.mark.asyncio
 async def test_real_tti(
     prompt: str = "a cat wearing a spacesuit, floating in space, with Earth in the background, highly detailed, cinematic lighting",
     output_filename: str = "test_generated_image.png",
