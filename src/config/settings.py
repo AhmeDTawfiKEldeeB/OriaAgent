@@ -33,7 +33,7 @@ class CloudflareSettings(BaseModel):
 class GeminiSettings(BaseModel):
     """Configuration settings for Google Gemini provider."""
     api_key: str = Field(default="", description="Google Gemini API Key")
-    model: str = Field(default="gemini-2.0-flash", description="Gemini Model Name")
+    model: str = Field(default="gemini-2.5-flash", description="Gemini Model Name")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
     max_output_tokens: Optional[int] = Field(default=None, description="Max output tokens")
 
